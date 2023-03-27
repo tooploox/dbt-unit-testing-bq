@@ -14,7 +14,9 @@
 
 {% macro render_node(node) %}
   {% set sql = node.raw_sql if node.raw_sql is defined else node.raw_code %}
-  {{ return (render(sql)) }}
+  {{ dbt_unit_testing.verbose('Removing Bigquery project + dataset spec from all tables so they can be mocked') }}
+  {% set output = render(sql) | replace("`" ~ target.database ~ "`.`" ~ target.schema ~ "`.`", "`") %}
+  {{ return (output) }}
 {% endmacro %}
 
 {% macro extract_columns_list(query) %}
@@ -76,7 +78,7 @@
 {% macro model_node (model_name) %}
   {% set node = nil
       | default(dbt_unit_testing.graph_node_by_prefix("model", model_name))
-      | default(dbt_unit_testing.graph_node_by_prefix("snapshot", model_name)) 
+      | default(dbt_unit_testing.graph_node_by_prefix("snapshot", model_name))
       | default(dbt_unit_testing.graph_node_by_prefix("seed", model_name)) %}
   {% if not node %}
     {{ dbt_unit_testing.raise_error("Node " ~ model.package_name ~ "." ~ model_name ~ " not found.") }}
